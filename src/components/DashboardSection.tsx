@@ -141,25 +141,42 @@ export const DashboardSection = () => {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mb-6">
-        <KPICard icon={Activity} label="আজ মোট রিপোর্ট সংখ্যা" value={fmtBn(data.totalReports)} delay={0} tone="primary" />
-        <KPICard icon={Clock} label="আজ মোট লোডশেডিং ঘণ্টা" value={fmtBn(data.totalOutageHours, 0)} delay={0.05} tone="amber" />
-        <KPICard icon={TrendingUp} label="সারাদেশে গড় লোডশেডিং" value={`${fmtBn(data.avgOutage, 1)} ঘ`} delay={0.1} tone="accent" />
-        <KPICard icon={AlertTriangle} label="সবচেয়ে ক্ষতিগ্রস্ত বিভাগ" value={data.worstDivision} delay={0.15} tone="destructive" />
-        <KPICard icon={MapPin} label="সবচেয়ে ক্ষতিগ্রস্ত জেলা" value={data.worstDistrict} delay={0.2} tone="destructive" />
-        <KPICard icon={Award} label="সবচেয়ে কম বিদ্যুৎ পাওয়া গ্রাম" value={data.worstVillage} delay={0.25} tone="amber" />
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
-        <div className="grid gap-4">
-          <DivisionBarChart data={data.divisionStats} />
-          <div className="grid gap-4 md:grid-cols-2">
-            <HourlyTrendChart data={data.hourlyTrend} />
-            <TopDistrictsChart data={data.districtStats} />
+      {data.totalReports === 0 ? (
+        <div className="rounded-3xl border border-dashed border-border bg-card/50 p-10 md:p-14 text-center">
+          <div className="mx-auto h-14 w-14 grid place-items-center rounded-2xl bg-primary/10 text-primary mb-4">
+            <Inbox className="h-7 w-7" />
           </div>
+          <h3 className="font-display text-xl md:text-2xl font-bold mb-2">এখনও পর্যাপ্ত রিপোর্ট আসেনি</h3>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto mb-5">
+            আপনার এলাকার রিপোর্ট দিয়ে জাতীয় ডেটা সমৃদ্ধ করুন। প্রথম রিপোর্ট আসা মাত্রই এখানে লাইভ পরিসংখ্যান দেখাবে।
+          </p>
+          <Button asChild className="bg-primary text-primary-foreground shadow-glow">
+            <Link to="/report">প্রথম রিপোর্ট দিন →</Link>
+          </Button>
         </div>
-        <LiveFeed />
-      </div>
+      ) : (
+        <>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mb-6">
+            <KPICard icon={Activity} label="আজ মোট রিপোর্ট সংখ্যা" value={fmtBn(data.totalReports)} delay={0} tone="primary" />
+            <KPICard icon={Clock} label="আজ মোট লোডশেডিং ঘণ্টা" value={fmtBn(data.totalOutageHours, 0)} delay={0.05} tone="amber" />
+            <KPICard icon={TrendingUp} label="সারাদেশে গড় লোডশেডিং" value={`${fmtBn(data.avgOutage, 1)} ঘ`} delay={0.1} tone="accent" />
+            <KPICard icon={AlertTriangle} label="সবচেয়ে ক্ষতিগ্রস্ত বিভাগ" value={data.worstDivision} delay={0.15} tone="destructive" />
+            <KPICard icon={MapPin} label="সবচেয়ে ক্ষতিগ্রস্ত জেলা" value={data.worstDistrict} delay={0.2} tone="destructive" />
+            <KPICard icon={Award} label="সবচেয়ে কম বিদ্যুৎ পাওয়া গ্রাম" value={data.worstVillage} delay={0.25} tone="amber" />
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
+            <div className="grid gap-4">
+              <DivisionBarChart data={data.divisionStats} />
+              <div className="grid gap-4 md:grid-cols-2">
+                <HourlyTrendChart data={data.hourlyTrend} />
+                <TopDistrictsChart data={data.districtStats} />
+              </div>
+            </div>
+            <LiveFeed />
+          </div>
+        </>
+      )}
     </section>
   );
 };
