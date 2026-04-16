@@ -175,38 +175,10 @@ export const ReportForm = () => {
             {step === 1 && (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">আপনি কোন এলাকার রিপোর্ট দিতে চান?</p>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <Label htmlFor="div">বিভাগ <span className="text-destructive">*</span></Label>
-                    <Select value={data.division} onValueChange={(v) => { update("division", v); update("district", ""); }}>
-                      <SelectTrigger id="div" className="mt-1.5"><SelectValue placeholder="বিভাগ নির্বাচন করুন" /></SelectTrigger>
-                      <SelectContent>{DIVISIONS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="dist">জেলা <span className="text-destructive">*</span></Label>
-                    <Select value={data.district} onValueChange={(v) => update("district", v)} disabled={!data.division}>
-                      <SelectTrigger id="dist" className="mt-1.5"><SelectValue placeholder="জেলা নির্বাচন করুন" /></SelectTrigger>
-                      <SelectContent>
-                        {data.division && DISTRICTS[data.division as keyof typeof DISTRICTS]?.map((d) => (
-                          <SelectItem key={d} value={d}>{d}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="up">উপজেলা</Label>
-                    <Input id="up" placeholder="যেমন: কালিয়াকৈর" value={data.upazila} onChange={(e) => update("upazila", e.target.value)} className="mt-1.5" maxLength={50} />
-                  </div>
-                  <div>
-                    <Label htmlFor="un">ইউনিয়ন</Label>
-                    <Input id="un" placeholder="যেমন: ফুলবাড়িয়া" value={data.union_name} onChange={(e) => update("union_name", e.target.value)} className="mt-1.5" maxLength={50} />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <Label htmlFor="vil">গ্রাম</Label>
-                    <Input id="vil" placeholder="আপনার গ্রামের নাম" value={data.village} onChange={(e) => update("village", e.target.value)} className="mt-1.5" maxLength={50} />
-                  </div>
-                </div>
+                <LocationPicker
+                  value={data.location}
+                  onChange={(loc) => setData((p) => ({ ...p, location: loc }))}
+                />
               </div>
             )}
 
@@ -268,7 +240,7 @@ export const ReportForm = () => {
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">নিচের তথ্য যাচাই করে রিপোর্ট জমা দিন:</p>
                 <div className="rounded-2xl bg-muted/50 p-5 space-y-2.5 border border-border/60">
-                  <Row label="লোকেশন" value={[data.village, data.union_name, data.upazila, data.district, data.division].filter(Boolean).join(", ") || "—"} />
+                  <Row label="লোকেশন" value={[data.location.village, data.location.union_name, data.location.upazila, data.location.district, data.location.division].filter(Boolean).join(", ") || "—"} />
                   <Row label="বিদ্যুৎ ছিল" value={`${fmtBn(Number(data.electricity_hours), 1)} ঘণ্টা`} />
                   <Row label="লোডশেডিং" value={`${fmtBn(Number(data.outage_hours), 1)} ঘণ্টা`} />
                   {data.outage_slots && <Row label="সময়" value={data.outage_slots} />}
