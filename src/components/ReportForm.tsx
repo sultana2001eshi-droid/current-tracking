@@ -8,9 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DIVISIONS, DISTRICTS, slugify, fmtBn } from "@/lib/bd-data";
-import { supabase } from "@/integrations/supabase/client";
+import { fmtBn } from "@/lib/bd-data";
+import { LocationPicker, type LocationValue } from "./LocationPicker";
+import { reportRepository } from "@/repositories/reportRepository";
+import { recentVillages } from "@/repositories/locationRepository";
 import { toast } from "sonner";
 
 const STEPS = [
@@ -21,11 +22,7 @@ const STEPS = [
 ];
 
 interface FormData {
-  division: string;
-  district: string;
-  upazila: string;
-  union_name: string;
-  village: string;
+  location: LocationValue;
   electricity_hours: string;
   outage_hours: string;
   outage_slots: string;
@@ -37,11 +34,13 @@ interface FormData {
 }
 
 const initial: FormData = {
-  division: "",
-  district: "",
-  upazila: "",
-  union_name: "",
-  village: "",
+  location: {
+    division: "",
+    district: "",
+    upazila: "",
+    union_name: "",
+    village: "",
+  },
   electricity_hours: "",
   outage_hours: "",
   outage_slots: "",
@@ -64,8 +63,8 @@ export const ReportForm = () => {
 
   const validateStep = (): string | null => {
     if (step === 1) {
-      if (!data.division) return "অনুগ্রহ করে বিভাগ নির্বাচন করুন";
-      if (!data.district) return "অনুগ্রহ করে জেলা নির্বাচন করুন";
+      if (!data.location.division) return "অনুগ্রহ করে বিভাগ নির্বাচন করুন";
+      if (!data.location.district) return "অনুগ্রহ করে জেলা নির্বাচন করুন";
     }
     if (step === 2) {
       const eh = Number(data.electricity_hours);
@@ -90,17 +89,12 @@ export const ReportForm = () => {
   const submit = async () => {
     setSubmitting(true);
     try {
-      const slug = [data.division, data.district, data.upazila, data.village]
-        .filter(Boolean)
-        .map(slugify)
-        .join("-");
-
-      const { error } = await supabase.from("outage_reports").insert({
-        division: data.division,
-        district: data.district,
-        upazila: data.upazila || null,
-        union_name: data.union_name || null,
-        village: data.village || null,
+      const { error } = await reportRepository.create({
+        division: data.location.division,
+        district: data.location.district,
+        upazila: data.location.upazila || null,
+        union_name: data.location.union_name || null,
+        village: data.location.village || null,
         electricity_hours: Number(data.electricity_hours),
         outage_hours: Number(data.outage_hours),
         outage_slots: data.outage_slots || null,
@@ -108,11 +102,10 @@ export const ReportForm = () => {
         low_voltage: data.low_voltage,
         transformer_issue: data.transformer_issue,
         appliance_issue: data.appliance_issue,
-        comments: data.comments.trim().slice(0, 500) || null,
-        device_hash: slug.slice(0, 64),
-        confidence_score: 0.9,
+        comments: data.comments,
       });
-      if (error) throw error;
+      if (error) throw new Error(error);
+      if (data.location.village) recentVillages.add(data.location.village);
       setDone(true);
       toast.success("ধন্যবাদ! আপনার রিপোর্ট সফলভাবে জমা হয়েছে");
       setTimeout(() => navigate("/dashboard"), 1800);
@@ -182,38 +175,10 @@ export const ReportForm = () => {
             {step === 1 && (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">আপনি কোন এলাকার রিপোর্ট দিতে চান?</p>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <Label htmlFor="div">বিভাগ <span className="text-destructive">*</span></Label>
-                    <Select value={data.division} onValueChange={(v) => { update("division", v); update("district", ""); }}>
-                      <SelectTrigger id="div" className="mt-1.5"><SelectValue placeholder="বিভাগ নির্বাচন করুন" /></SelectTrigger>
-                      <SelectContent>{DIVISIONS.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="dist">জেলা <span className="text-destructive">*</span></Label>
-                    <Select value={data.district} onValueChange={(v) => update("district", v)} disabled={!data.division}>
-                      <SelectTrigger id="dist" className="mt-1.5"><SelectValue placeholder="জেলা নির্বাচন করুন" /></SelectTrigger>
-                      <SelectContent>
-                        {data.division && DISTRICTS[data.division as keyof typeof DISTRICTS]?.map((d) => (
-                          <SelectItem key={d} value={d}>{d}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="up">উপজেলা</Label>
-                    <Input id="up" placeholder="যেমন: কালিয়াকৈর" value={data.upazila} onChange={(e) => update("upazila", e.target.value)} className="mt-1.5" maxLength={50} />
-                  </div>
-                  <div>
-                    <Label htmlFor="un">ইউনিয়ন</Label>
-                    <Input id="un" placeholder="যেমন: ফুলবাড়িয়া" value={data.union_name} onChange={(e) => update("union_name", e.target.value)} className="mt-1.5" maxLength={50} />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <Label htmlFor="vil">গ্রাম</Label>
-                    <Input id="vil" placeholder="আপনার গ্রামের নাম" value={data.village} onChange={(e) => update("village", e.target.value)} className="mt-1.5" maxLength={50} />
-                  </div>
-                </div>
+                <LocationPicker
+                  value={data.location}
+                  onChange={(loc) => setData((p) => ({ ...p, location: loc }))}
+                />
               </div>
             )}
 
@@ -275,7 +240,7 @@ export const ReportForm = () => {
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">নিচের তথ্য যাচাই করে রিপোর্ট জমা দিন:</p>
                 <div className="rounded-2xl bg-muted/50 p-5 space-y-2.5 border border-border/60">
-                  <Row label="লোকেশন" value={[data.village, data.union_name, data.upazila, data.district, data.division].filter(Boolean).join(", ") || "—"} />
+                  <Row label="লোকেশন" value={[data.location.village, data.location.union_name, data.location.upazila, data.location.district, data.location.division].filter(Boolean).join(", ") || "—"} />
                   <Row label="বিদ্যুৎ ছিল" value={`${fmtBn(Number(data.electricity_hours), 1)} ঘণ্টা`} />
                   <Row label="লোডশেডিং" value={`${fmtBn(Number(data.outage_hours), 1)} ঘণ্টা`} />
                   {data.outage_slots && <Row label="সময়" value={data.outage_slots} />}
