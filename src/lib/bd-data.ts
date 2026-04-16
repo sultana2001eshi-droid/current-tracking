@@ -28,8 +28,11 @@ const BN_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮"
 export const toBn = (n: number | string): string =>
   String(n).replace(/\d/g, (d) => BN_DIGITS[Number(d)]);
 
-export const fmtBn = (n: number, decimals = 0): string =>
-  toBn(n.toFixed(decimals));
+export const fmtBn = (n: number | string | null | undefined, decimals = 0): string => {
+  const num = Number(n);
+  if (!isFinite(num)) return toBn(0);
+  return toBn(num.toFixed(decimals));
+};
 
 // Slug helper
 export const slugify = (s: string): string =>
