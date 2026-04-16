@@ -14,7 +14,143 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      aggregated_stats: {
+        Row: {
+          avg_outage: number | null
+          district: string | null
+          division: string
+          id: string
+          total_reports: number | null
+          updated_at: string
+        }
+        Insert: {
+          avg_outage?: number | null
+          district?: string | null
+          division: string
+          id?: string
+          total_reports?: number | null
+          updated_at?: string
+        }
+        Update: {
+          avg_outage?: number | null
+          district?: string | null
+          division?: string
+          id?: string
+          total_reports?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      locations: {
+        Row: {
+          created_at: string
+          district: string
+          division: string
+          id: string
+          slug: string
+          union_name: string | null
+          upazila: string | null
+          village: string | null
+        }
+        Insert: {
+          created_at?: string
+          district: string
+          division: string
+          id?: string
+          slug: string
+          union_name?: string | null
+          upazila?: string | null
+          village?: string | null
+        }
+        Update: {
+          created_at?: string
+          district?: string
+          division?: string
+          id?: string
+          slug?: string
+          union_name?: string | null
+          upazila?: string | null
+          village?: string | null
+        }
+        Relationships: []
+      }
+      outage_reports: {
+        Row: {
+          appliance_issue: boolean | null
+          comments: string | null
+          confidence_score: number | null
+          created_at: string
+          currently_on: boolean | null
+          device_hash: string | null
+          district: string
+          division: string
+          electricity_hours: number
+          id: string
+          image_url: string | null
+          location_id: string | null
+          low_voltage: boolean | null
+          outage_hours: number
+          outage_slots: string | null
+          report_date: string
+          transformer_issue: boolean | null
+          union_name: string | null
+          upazila: string | null
+          village: string | null
+        }
+        Insert: {
+          appliance_issue?: boolean | null
+          comments?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          currently_on?: boolean | null
+          device_hash?: string | null
+          district: string
+          division: string
+          electricity_hours: number
+          id?: string
+          image_url?: string | null
+          location_id?: string | null
+          low_voltage?: boolean | null
+          outage_hours: number
+          outage_slots?: string | null
+          report_date?: string
+          transformer_issue?: boolean | null
+          union_name?: string | null
+          upazila?: string | null
+          village?: string | null
+        }
+        Update: {
+          appliance_issue?: boolean | null
+          comments?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          currently_on?: boolean | null
+          device_hash?: string | null
+          district?: string
+          division?: string
+          electricity_hours?: number
+          id?: string
+          image_url?: string | null
+          location_id?: string | null
+          low_voltage?: boolean | null
+          outage_hours?: number
+          outage_slots?: string | null
+          report_date?: string
+          transformer_issue?: boolean | null
+          union_name?: string | null
+          upazila?: string | null
+          village?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outage_reports_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
