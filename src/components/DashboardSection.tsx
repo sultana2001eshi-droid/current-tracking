@@ -123,7 +123,7 @@ export const useDashboardData = () => {
     compute();
 
     const channel = supabase
-      .channel("dashboard-realtime")
+      .channel(`dashboard-realtime-${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "outage_reports" },
