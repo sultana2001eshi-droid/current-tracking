@@ -1,20 +1,14 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Activity, Clock, TrendingUp, MapPin, AlertTriangle, Award } from "lucide-react";
+import { Activity, Clock, TrendingUp, MapPin, AlertTriangle, Award, Inbox } from "lucide-react";
 import { KPICard } from "./KPICard";
 import { fmtBn } from "@/lib/bd-data";
 import { DivisionBarChart, HourlyTrendChart, TopDistrictsChart } from "./Charts";
 import { LiveFeed } from "./LiveFeed";
+import { dashboardRepository, type RawReport } from "@/repositories/dashboardRepository";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
-interface Report {
-  id: string;
-  division: string;
-  district: string;
-  village: string | null;
-  electricity_hours: number;
-  outage_hours: number;
-  created_at: string;
-}
+type Report = RawReport;
 
 interface DashboardData {
   totalReports: number;
