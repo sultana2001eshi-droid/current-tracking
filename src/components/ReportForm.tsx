@@ -63,8 +63,8 @@ export const ReportForm = () => {
 
   const validateStep = (): string | null => {
     if (step === 1) {
-      if (!data.division) return "অনুগ্রহ করে বিভাগ নির্বাচন করুন";
-      if (!data.district) return "অনুগ্রহ করে জেলা নির্বাচন করুন";
+      if (!data.location.division) return "অনুগ্রহ করে বিভাগ নির্বাচন করুন";
+      if (!data.location.district) return "অনুগ্রহ করে জেলা নির্বাচন করুন";
     }
     if (step === 2) {
       const eh = Number(data.electricity_hours);
@@ -89,17 +89,12 @@ export const ReportForm = () => {
   const submit = async () => {
     setSubmitting(true);
     try {
-      const slug = [data.division, data.district, data.upazila, data.village]
-        .filter(Boolean)
-        .map(slugify)
-        .join("-");
-
-      const { error } = await supabase.from("outage_reports").insert({
-        division: data.division,
-        district: data.district,
-        upazila: data.upazila || null,
-        union_name: data.union_name || null,
-        village: data.village || null,
+      const { error } = await reportRepository.create({
+        division: data.location.division,
+        district: data.location.district,
+        upazila: data.location.upazila || null,
+        union_name: data.location.union_name || null,
+        village: data.location.village || null,
         electricity_hours: Number(data.electricity_hours),
         outage_hours: Number(data.outage_hours),
         outage_slots: data.outage_slots || null,
@@ -107,11 +102,10 @@ export const ReportForm = () => {
         low_voltage: data.low_voltage,
         transformer_issue: data.transformer_issue,
         appliance_issue: data.appliance_issue,
-        comments: data.comments.trim().slice(0, 500) || null,
-        device_hash: slug.slice(0, 64),
-        confidence_score: 0.9,
+        comments: data.comments,
       });
-      if (error) throw error;
+      if (error) throw new Error(error);
+      if (data.location.village) recentVillages.add(data.location.village);
       setDone(true);
       toast.success("ধন্যবাদ! আপনার রিপোর্ট সফলভাবে জমা হয়েছে");
       setTimeout(() => navigate("/dashboard"), 1800);
