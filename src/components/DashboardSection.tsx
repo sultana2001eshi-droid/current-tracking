@@ -28,18 +28,8 @@ export const useDashboardData = () => {
 
   useEffect(() => {
     const compute = async () => {
-      const { data: reports } = await supabase
-        .from("outage_reports")
-        .select("id,division,district,village,electricity_hours,outage_hours,created_at")
-        .order("created_at", { ascending: false })
-        .limit(500);
-
-      if (!reports) {
-        setLoading(false);
-        return;
-      }
-
-      const r = reports as Report[];
+      const reports = await dashboardRepository.recentReports(500);
+      const r = reports;
 
       const totalReports = r.length;
       const totalOutageHours = r.reduce((s, x) => s + Number(x.outage_hours), 0);
@@ -115,19 +105,8 @@ export const useDashboardData = () => {
     };
 
     compute();
-
-    const channel = supabase
-      .channel(`dashboard-realtime-${Math.random().toString(36).slice(2)}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "outage_reports" },
-        () => compute()
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    const unsubscribe = dashboardRepository.subscribe(compute);
+    return unsubscribe;
   }, []);
 
   return { data, loading };
