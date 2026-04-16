@@ -8,9 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DIVISIONS, DISTRICTS, slugify, fmtBn } from "@/lib/bd-data";
-import { supabase } from "@/integrations/supabase/client";
+import { fmtBn } from "@/lib/bd-data";
+import { LocationPicker, type LocationValue } from "./LocationPicker";
+import { reportRepository } from "@/repositories/reportRepository";
+import { recentVillages } from "@/repositories/locationRepository";
 import { toast } from "sonner";
 
 const STEPS = [
@@ -21,11 +22,7 @@ const STEPS = [
 ];
 
 interface FormData {
-  division: string;
-  district: string;
-  upazila: string;
-  union_name: string;
-  village: string;
+  location: LocationValue;
   electricity_hours: string;
   outage_hours: string;
   outage_slots: string;
@@ -37,11 +34,13 @@ interface FormData {
 }
 
 const initial: FormData = {
-  division: "",
-  district: "",
-  upazila: "",
-  union_name: "",
-  village: "",
+  location: {
+    division: "",
+    district: "",
+    upazila: "",
+    union_name: "",
+    village: "",
+  },
   electricity_hours: "",
   outage_hours: "",
   outage_slots: "",
