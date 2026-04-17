@@ -123,7 +123,33 @@ export const useDashboardData = (range: DashboardRange = "today") => {
 };
 
 export const DashboardSection = () => {
-  const { data, loading } = useDashboardData();
+  const [range, setRange] = useState<DashboardRange>("today");
+  const { data, loading } = useDashboardData(range);
+
+  const RangeToggle = (
+    <div className="inline-flex items-center gap-1 p-1 rounded-full bg-muted/70 border border-border/60">
+      {([
+        { k: "today" as const, label: "আজকের ডাটা" },
+        { k: "all" as const, label: "সর্বমোট ডাটা" },
+      ]).map((opt) => {
+        const active = range === opt.k;
+        return (
+          <button
+            key={opt.k}
+            type="button"
+            onClick={() => setRange(opt.k)}
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-base ${
+              active
+                ? "bg-primary text-primary-foreground shadow-glow"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
 
   if (loading || !data) {
     return (
@@ -135,19 +161,29 @@ export const DashboardSection = () => {
     );
   }
 
+  const isToday = range === "today";
+  const totalLabel = isToday ? "আজ মোট রিপোর্ট সংখ্যা" : "সর্বমোট রিপোর্ট সংখ্যা";
+  const outageLabel = isToday ? "আজ মোট লোডশেডিং ঘণ্টা" : "সর্বমোট লোডশেডিং ঘণ্টা";
+  const avgLabel = isToday ? "আজকের গড় লোডশেডিং" : "সর্বকালের গড় লোডশেডিং";
+
   return (
     <section className="container py-12 md:py-16">
       <div className="mb-8 flex items-end justify-between flex-wrap gap-3">
         <div>
           <div className="editorial-eyebrow">লাইভ জাতীয় ড্যাশবোর্ড</div>
-          <h2 className="font-display text-3xl md:text-4xl font-bold mt-1">আজকের পরিস্থিতি এক নজরে</h2>
+          <h2 className="font-display text-3xl md:text-4xl font-bold mt-1">
+            {isToday ? "আজকের পরিস্থিতি এক নজরে" : "সর্বমোট পরিস্থিতি এক নজরে"}
+          </h2>
           <p className="text-sm text-muted-foreground mt-2 max-w-xl">
             ডেটা বলুক কোথায় সবচেয়ে বেশি কষ্ট হচ্ছে — প্রতিটি সংখ্যা জনগণের রিপোর্ট থেকে।
           </p>
         </div>
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-success/10 text-success border border-success/20">
-          <span className="h-2 w-2 rounded-full bg-success live-dot" />
-          <span className="text-xs font-semibold">রিয়েলটাইম আপডেট</span>
+        <div className="flex items-center gap-2 flex-wrap">
+          {RangeToggle}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-success/10 text-success border border-success/20">
+            <span className="h-2 w-2 rounded-full bg-success live-dot" />
+            <span className="text-xs font-semibold">রিয়েলটাইম</span>
+          </div>
         </div>
       </div>
 
@@ -158,7 +194,9 @@ export const DashboardSection = () => {
           </div>
           <h3 className="font-display text-xl md:text-2xl font-bold mb-2">এখনও পর্যাপ্ত রিপোর্ট আসেনি</h3>
           <p className="text-sm text-muted-foreground max-w-md mx-auto mb-5">
-            আপনার এলাকার রিপোর্ট দিয়ে জাতীয় ডেটা সমৃদ্ধ করুন। প্রথম রিপোর্ট আসা মাত্রই এখানে লাইভ পরিসংখ্যান দেখাবে।
+            {isToday
+              ? "আজ এখনও কোনো রিপোর্ট আসেনি। আপনার রিপোর্ট দিয়ে শুরু করুন — সর্বমোট ডেটাও দেখতে পারেন।"
+              : "আপনার এলাকার রিপোর্ট দিয়ে জাতীয় ডেটা সমৃদ্ধ করুন। প্রথম রিপোর্ট আসা মাত্রই এখানে লাইভ পরিসংখ্যান দেখাবে।"}
           </p>
           <Button asChild className="bg-primary text-primary-foreground shadow-glow">
             <Link to="/report">প্রথম রিপোর্ট দিন →</Link>
@@ -167,9 +205,9 @@ export const DashboardSection = () => {
       ) : (
         <>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mb-6">
-            <KPICard icon={Activity} label="আজ মোট রিপোর্ট সংখ্যা" value={fmtBn(data.totalReports)} delay={0} tone="primary" />
-            <KPICard icon={Clock} label="আজ মোট লোডশেডিং ঘণ্টা" value={fmtBn(data.totalOutageHours, 0)} delay={0.05} tone="amber" />
-            <KPICard icon={TrendingUp} label="সারাদেশে গড় লোডশেডিং" value={`${fmtBn(data.avgOutage, 1)} ঘ`} delay={0.1} tone="accent" />
+            <KPICard icon={Activity} label={totalLabel} value={fmtBn(data.totalReports)} delay={0} tone="primary" />
+            <KPICard icon={Clock} label={outageLabel} value={fmtBn(data.totalOutageHours, 0)} delay={0.05} tone="amber" />
+            <KPICard icon={TrendingUp} label={avgLabel} value={`${fmtBn(data.avgOutage, 1)} ঘ`} delay={0.1} tone="accent" />
             <KPICard icon={AlertTriangle} label="সবচেয়ে ক্ষতিগ্রস্ত বিভাগ" value={data.worstDivision} delay={0.15} tone="destructive" />
             <KPICard icon={MapPin} label="সবচেয়ে ক্ষতিগ্রস্ত জেলা" value={data.worstDistrict} delay={0.2} tone="destructive" />
             <KPICard icon={Award} label="সবচেয়ে কম বিদ্যুৎ পাওয়া গ্রাম" value={data.worstVillage} delay={0.25} tone="amber" />
