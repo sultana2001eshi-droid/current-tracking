@@ -220,7 +220,7 @@ export const DashboardSection = () => {
         <div>
           <div className="editorial-eyebrow">লাইভ জাতীয় ড্যাশবোর্ড</div>
           <h2 className="font-display text-3xl md:text-4xl font-bold mt-1">
-            {isToday ? "আজকের পরিস্থিতি এক নজরে" : "সর্বমোট পরিস্থিতি এক নজরে"}
+            {prefix} পরিস্থিতি এক নজরে
           </h2>
           <p className="text-sm text-muted-foreground mt-2 max-w-xl">
             ডেটা বলুক কোথায় সবচেয়ে বেশি কষ্ট হচ্ছে — প্রতিটি সংখ্যা জনগণের রিপোর্ট থেকে।
