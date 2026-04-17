@@ -8,6 +8,8 @@ import { dashboardRepository, type RawReport } from "@/repositories/dashboardRep
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
+export type DashboardRange = "today" | "all";
+
 type Report = RawReport;
 
 interface DashboardData {
@@ -22,13 +24,18 @@ interface DashboardData {
   hourlyTrend: { hour: string; outage: number }[];
 }
 
-export const useDashboardData = () => {
+export const useDashboardData = (range: DashboardRange = "today") => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     const compute = async () => {
-      const reports = await dashboardRepository.recentReports(500);
+      const reports =
+        range === "today"
+          ? await dashboardRepository.todayReports()
+          : await dashboardRepository.allTimeReports(5000);
+      if (cancelled) return;
       const r = reports;
 
       const totalReports = r.length;
@@ -72,14 +79,13 @@ export const useDashboardData = () => {
       const worstDistrict = [...districtStats].sort((a, b) => b.avg_outage - a.avg_outage)[0]?.district || "—";
       const worstVillage = Array.from(villageMap.values()).sort((a, b) => b.sum / b.count - a.sum / a.count)[0]?.village || "—";
 
-      // Hourly trend (last 24h)
       const now = new Date();
       const buckets: Record<number, { sum: number; count: number }> = {};
       for (let i = 0; i < 24; i++) buckets[i] = { sum: 0, count: 0 };
       r.forEach((x) => {
         const t = new Date(x.created_at);
         const diffH = Math.floor((now.getTime() - t.getTime()) / 3_600_000);
-        if (diffH < 24) {
+        if (diffH < 24 && diffH >= 0) {
           const slot = 23 - diffH;
           buckets[slot].sum += Number(x.outage_hours);
           buckets[slot].count += 1;
@@ -104,10 +110,14 @@ export const useDashboardData = () => {
       setLoading(false);
     };
 
+    setLoading(true);
     compute();
     const unsubscribe = dashboardRepository.subscribe(compute);
-    return unsubscribe;
-  }, []);
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [range]);
 
   return { data, loading };
 };
