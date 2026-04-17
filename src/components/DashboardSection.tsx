@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Activity, Clock, TrendingUp, MapPin, AlertTriangle, Award, Inbox } from "lucide-react";
 import { KPICard } from "./KPICard";
 import { fmtBn } from "@/lib/bd-data";
@@ -7,8 +7,10 @@ import { LiveFeed } from "./LiveFeed";
 import { dashboardRepository, type RawReport } from "@/repositories/dashboardRepository";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { DateRangePicker } from "./DateRangePicker";
 
-export type DashboardRange = "today" | "all";
+export type DashboardRange = "today" | "7d" | "30d" | "all" | "custom";
+export interface CustomRange { from: Date; to: Date }
 
 type Report = RawReport;
 
