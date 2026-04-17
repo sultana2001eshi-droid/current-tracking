@@ -137,7 +137,7 @@ export const useDashboardData = (
       cancelled = true;
       unsubscribe();
     };
-  }, [range]);
+  }, [range, customKey]);
 
   return { data, loading };
 };
