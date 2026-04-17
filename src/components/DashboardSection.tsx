@@ -26,19 +26,37 @@ interface DashboardData {
   hourlyTrend: { hour: string; outage: number }[];
 }
 
-export const useDashboardData = (range: DashboardRange = "today") => {
+export const useDashboardData = (
+  range: DashboardRange = "today",
+  custom?: CustomRange
+) => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Stable key for custom range to avoid effect re-runs on every render
+  const customKey = custom ? `${custom.from.getTime()}-${custom.to.getTime()}` : "";
 
   useEffect(() => {
     let cancelled = false;
     const compute = async () => {
-      const reports =
-        range === "today"
-          ? await dashboardRepository.todayReports()
-          : await dashboardRepository.allTimeReports(5000);
+      let reports: RawReport[];
+      if (range === "today") {
+        reports = await dashboardRepository.todayReports();
+      } else if (range === "all") {
+        reports = await dashboardRepository.allTimeReports(5000);
+      } else if (range === "custom" && custom) {
+        reports = await dashboardRepository.rangeReports(custom.from, custom.to);
+      } else {
+        const days = range === "7d" ? 7 : 30;
+        const to = new Date();
+        const from = new Date();
+        from.setDate(from.getDate() - days);
+        from.setHours(0, 0, 0, 0);
+        reports = await dashboardRepository.rangeReports(from, to);
+      }
       if (cancelled) return;
       const r = reports;
+
 
       const totalReports = r.length;
       const totalOutageHours = r.reduce((s, x) => s + Number(x.outage_hours), 0);
