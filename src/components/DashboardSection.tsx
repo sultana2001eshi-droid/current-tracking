@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Activity, Clock, TrendingUp, MapPin, AlertTriangle, Award, Inbox } from "lucide-react";
 import { KPICard } from "./KPICard";
 import { fmtBn } from "@/lib/bd-data";
@@ -7,8 +7,10 @@ import { LiveFeed } from "./LiveFeed";
 import { dashboardRepository, type RawReport } from "@/repositories/dashboardRepository";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { DateRangePicker } from "./DateRangePicker";
 
-export type DashboardRange = "today" | "all";
+export type DashboardRange = "today" | "7d" | "30d" | "all" | "custom";
+export interface CustomRange { from: Date; to: Date }
 
 type Report = RawReport;
 
@@ -24,19 +26,37 @@ interface DashboardData {
   hourlyTrend: { hour: string; outage: number }[];
 }
 
-export const useDashboardData = (range: DashboardRange = "today") => {
+export const useDashboardData = (
+  range: DashboardRange = "today",
+  custom?: CustomRange
+) => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Stable key for custom range to avoid effect re-runs on every render
+  const customKey = custom ? `${custom.from.getTime()}-${custom.to.getTime()}` : "";
 
   useEffect(() => {
     let cancelled = false;
     const compute = async () => {
-      const reports =
-        range === "today"
-          ? await dashboardRepository.todayReports()
-          : await dashboardRepository.allTimeReports(5000);
+      let reports: RawReport[];
+      if (range === "today") {
+        reports = await dashboardRepository.todayReports();
+      } else if (range === "all") {
+        reports = await dashboardRepository.allTimeReports(5000);
+      } else if (range === "custom" && custom) {
+        reports = await dashboardRepository.rangeReports(custom.from, custom.to);
+      } else {
+        const days = range === "7d" ? 7 : 30;
+        const to = new Date();
+        const from = new Date();
+        from.setDate(from.getDate() - days);
+        from.setHours(0, 0, 0, 0);
+        reports = await dashboardRepository.rangeReports(from, to);
+      }
       if (cancelled) return;
       const r = reports;
+
 
       const totalReports = r.length;
       const totalOutageHours = r.reduce((s, x) => s + Number(x.outage_hours), 0);
@@ -117,37 +137,57 @@ export const useDashboardData = (range: DashboardRange = "today") => {
       cancelled = true;
       unsubscribe();
     };
-  }, [range]);
+  }, [range, customKey]);
 
   return { data, loading };
 };
 
 export const DashboardSection = () => {
   const [range, setRange] = useState<DashboardRange>("today");
-  const { data, loading } = useDashboardData(range);
+  const [custom, setCustom] = useState<CustomRange | undefined>(undefined);
+  const { data, loading } = useDashboardData(range, custom);
+
+  const presets: { k: DashboardRange; label: string }[] = useMemo(
+    () => [
+      { k: "today", label: "আজকের" },
+      { k: "7d", label: "৭ দিন" },
+      { k: "30d", label: "৩০ দিন" },
+      { k: "all", label: "সর্বমোট" },
+    ],
+    []
+  );
 
   const RangeToggle = (
-    <div className="inline-flex items-center gap-1 p-1 rounded-full bg-muted/70 border border-border/60">
-      {([
-        { k: "today" as const, label: "আজকের ডাটা" },
-        { k: "all" as const, label: "সর্বমোট ডাটা" },
-      ]).map((opt) => {
-        const active = range === opt.k;
-        return (
-          <button
-            key={opt.k}
-            type="button"
-            onClick={() => setRange(opt.k)}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-base ${
-              active
-                ? "bg-primary text-primary-foreground shadow-glow"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {opt.label}
-          </button>
-        );
-      })}
+    <div className="flex items-center gap-2 flex-wrap">
+      <div className="inline-flex items-center gap-1 p-1 rounded-full bg-muted/70 border border-border/60">
+        {presets.map((opt) => {
+          const active = range === opt.k;
+          return (
+            <button
+              key={opt.k}
+              type="button"
+              onClick={() => {
+                setRange(opt.k);
+                setCustom(undefined);
+              }}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-base ${
+                active
+                  ? "bg-primary text-primary-foreground shadow-glow"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+      <DateRangePicker
+        value={range === "custom" ? custom : undefined}
+        onChange={(r) => {
+          setCustom(r);
+          setRange("custom");
+        }}
+      />
     </div>
   );
 
@@ -162,9 +202,17 @@ export const DashboardSection = () => {
   }
 
   const isToday = range === "today";
-  const totalLabel = isToday ? "আজ মোট রিপোর্ট সংখ্যা" : "সর্বমোট রিপোর্ট সংখ্যা";
-  const outageLabel = isToday ? "আজ মোট লোডশেডিং ঘণ্টা" : "সর্বমোট লোডশেডিং ঘণ্টা";
-  const avgLabel = isToday ? "আজকের গড় লোডশেডিং" : "সর্বকালের গড় লোডশেডিং";
+  const rangeLabelMap: Record<DashboardRange, string> = {
+    today: "আজকের",
+    "7d": "৭ দিনের",
+    "30d": "৩০ দিনের",
+    all: "সর্বমোট",
+    custom: "নির্বাচিত সময়ের",
+  };
+  const prefix = rangeLabelMap[range];
+  const totalLabel = `${prefix} মোট রিপোর্ট সংখ্যা`;
+  const outageLabel = `${prefix} মোট লোডশেডিং ঘণ্টা`;
+  const avgLabel = `${prefix} গড় লোডশেডিং`;
 
   return (
     <section className="container py-12 md:py-16">
@@ -172,7 +220,7 @@ export const DashboardSection = () => {
         <div>
           <div className="editorial-eyebrow">লাইভ জাতীয় ড্যাশবোর্ড</div>
           <h2 className="font-display text-3xl md:text-4xl font-bold mt-1">
-            {isToday ? "আজকের পরিস্থিতি এক নজরে" : "সর্বমোট পরিস্থিতি এক নজরে"}
+            {prefix} পরিস্থিতি এক নজরে
           </h2>
           <p className="text-sm text-muted-foreground mt-2 max-w-xl">
             ডেটা বলুক কোথায় সবচেয়ে বেশি কষ্ট হচ্ছে — প্রতিটি সংখ্যা জনগণের রিপোর্ট থেকে।
