@@ -22,6 +22,31 @@ export const dashboardRepository = {
     return (data as RawReport[]) || [];
   },
 
+  // Today = local-day window [00:00 today, 00:00 tomorrow)
+  async todayReports(): Promise<RawReport[]> {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    const { data } = await supabase
+      .from("outage_reports")
+      .select("id,division,district,village,electricity_hours,outage_hours,created_at")
+      .gte("created_at", start.toISOString())
+      .lt("created_at", end.toISOString())
+      .order("created_at", { ascending: false })
+      .limit(2000);
+    return (data as RawReport[]) || [];
+  },
+
+  async allTimeReports(limit = 5000): Promise<RawReport[]> {
+    const { data } = await supabase
+      .from("outage_reports")
+      .select("id,division,district,village,electricity_hours,outage_hours,created_at")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    return (data as RawReport[]) || [];
+  },
+
   subscribe(onChange: () => void) {
     const channel = supabase
       .channel(`reports-realtime-${Math.random().toString(36).slice(2)}`)
