@@ -30,6 +30,7 @@ interface FormData {
   low_voltage: boolean;
   transformer_issue: boolean;
   appliance_issue: boolean;
+  unknown_reason: boolean;
   comments: string;
 }
 
@@ -48,6 +49,7 @@ const initial: FormData = {
   low_voltage: false,
   transformer_issue: false,
   appliance_issue: false,
+  unknown_reason: false,
   comments: "",
 };
 
@@ -102,7 +104,9 @@ export const ReportForm = () => {
         low_voltage: data.low_voltage,
         transformer_issue: data.transformer_issue,
         appliance_issue: data.appliance_issue,
-        comments: data.comments,
+        comments: data.unknown_reason
+          ? `[অজানা কারণ] ${data.comments || ""}`.trim()
+          : data.comments,
       });
       if (error) throw new Error(error);
       if (data.location.village) recentVillages.add(data.location.village);
@@ -216,11 +220,12 @@ export const ReportForm = () => {
             {step === 3 && (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">কোন কোন সমস্যার মুখোমুখি হয়েছেন? <span className="text-xs">(ঐচ্ছিক)</span></p>
-                <div className="grid gap-2.5 sm:grid-cols-3">
+                <div className="grid gap-2.5 sm:grid-cols-2 md:grid-cols-4">
                   {[
                     { k: "transformer_issue" as const, label: "ট্রান্সফরমার সমস্যা" },
                     { k: "low_voltage" as const, label: "ভোল্টেজ কম ছিল" },
                     { k: "appliance_issue" as const, label: "ফ্যান/ফ্রিজ সমস্যা" },
+                    { k: "unknown_reason" as const, label: "অজানা কারণ" },
                   ].map((item) => (
                     <label key={item.k} className="flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-border has-[:checked]:border-primary has-[:checked]:bg-primary/5 cursor-pointer transition-base">
                       <Checkbox checked={data[item.k]} onCheckedChange={(v) => update(item.k, !!v)} />
@@ -245,11 +250,12 @@ export const ReportForm = () => {
                   <Row label="লোডশেডিং" value={`${fmtBn(Number(data.outage_hours), 1)} ঘণ্টা`} />
                   {data.outage_slots && <Row label="সময়" value={data.outage_slots} />}
                   <Row label="বর্তমান অবস্থা" value={data.currently_on === "yes" ? "বিদ্যুৎ আছে" : "এখনও বন্ধ"} />
-                  {(data.transformer_issue || data.low_voltage || data.appliance_issue) && (
+                  {(data.transformer_issue || data.low_voltage || data.appliance_issue || data.unknown_reason) && (
                     <Row label="অভিযোগ" value={[
                       data.transformer_issue && "ট্রান্সফরমার",
                       data.low_voltage && "ভোল্টেজ কম",
                       data.appliance_issue && "ফ্যান/ফ্রিজ",
+                      data.unknown_reason && "অজানা কারণ",
                     ].filter(Boolean).join(", ")} />
                   )}
                 </div>
