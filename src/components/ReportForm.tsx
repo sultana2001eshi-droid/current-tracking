@@ -250,11 +250,12 @@ export const ReportForm = () => {
                   <Row label="লোডশেডিং" value={`${fmtBn(Number(data.outage_hours), 1)} ঘণ্টা`} />
                   {data.outage_slots && <Row label="সময়" value={data.outage_slots} />}
                   <Row label="বর্তমান অবস্থা" value={data.currently_on === "yes" ? "বিদ্যুৎ আছে" : "এখনও বন্ধ"} />
-                  {(data.transformer_issue || data.low_voltage || data.appliance_issue) && (
+                  {(data.transformer_issue || data.low_voltage || data.appliance_issue || data.unknown_reason) && (
                     <Row label="অভিযোগ" value={[
                       data.transformer_issue && "ট্রান্সফরমার",
                       data.low_voltage && "ভোল্টেজ কম",
                       data.appliance_issue && "ফ্যান/ফ্রিজ",
+                      data.unknown_reason && "অজানা কারণ",
                     ].filter(Boolean).join(", ")} />
                   )}
                 </div>
